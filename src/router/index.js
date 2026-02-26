@@ -1,14 +1,22 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
 
-// 路由配置
 const routes = [
   {
     path: '/',
     name: 'Home',
+    component: () => import('../views/TestPage.vue'),
+    meta: {
+      title: '控制台',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/realtime',
+    name: 'RealTime',
     component: () => import('../views/RealTimeRecog.vue'),
     meta: {
       title: '实时识别',
-      requiresAuth: true
+      requiresAuth: false
     }
   },
   {
@@ -16,8 +24,17 @@ const routes = [
     name: 'History',
     component: () => import('../views/HistoryData.vue'),
     meta: {
-      title: '历史数据',
-      requiresAuth: true
+      title: '历史记录',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: () => import('../views/TestPage.vue'),
+    meta: {
+      title: '统计报表',
+      requiresAuth: false
     }
   },
   {
@@ -26,52 +43,61 @@ const routes = [
     component: () => import('../views/SystemConfig.vue'),
     meta: {
       title: '系统配置',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('../views/Login.vue'),
-    meta: {
-      title: '登录',
       requiresAuth: false
     }
   },
   {
-    path: '/:pathMatch(.*)*',
-    name: 'NotFound',
-    redirect: '/'
+    path: '/device',
+    name: 'Device',
+    component: () => import('../views/TestPage.vue'),
+    meta: {
+      title: '设备管理',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/alerts',
+    name: 'Alerts',
+    component: () => import('../views/TestPage.vue'),
+    meta: {
+      title: '告警管理',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/logs',
+    name: 'Logs',
+    component: () => import('../views/TestPage.vue'),
+    meta: {
+      title: '日志管理',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/users',
+    name: 'Users',
+    component: () => import('../views/UsersPage.vue'),
+    meta: {
+      title: '用户管理',
+      requiresAuth: false
+    }
   }
 ];
 
-// 创建路由实例
 const router = createRouter({
   history: createWebHistory(),
   routes
 });
 
-// 路由守卫
+// 全局前置守卫，设置页面标题
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = `${to.meta.title || '情绪识别系统'} - 人脸情绪识别管理系统`;
-  
-  // 检查是否需要认证
-  if (to.meta.requiresAuth) {
-    // 从本地存储获取token
-    const token = localStorage.getItem('token');
-    if (token) {
-      // 有token，允许访问
-      next();
-    } else {
-      // 无token，允许访问（开发环境）
-      // 实际生产环境应该跳转到登录页
-      next();
-    }
+  if (to.meta.title) {
+    document.title = to.meta.title + ' - 人脸情绪识别系统';
   } else {
-    // 不需要认证的页面，直接访问
-    next();
+    document.title = '人脸情绪识别系统';
   }
+  next();
 });
 
 export default router;

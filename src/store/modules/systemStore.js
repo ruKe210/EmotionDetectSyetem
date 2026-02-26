@@ -52,6 +52,11 @@ export const useSystemStore = defineStore('system', {
   }),
   
   getters: {
+    // 当前用户
+    currentUser: (state) => {
+      return state.user.id ? state.user : null;
+    },
+    
     // 是否登录
     isLoggedIn: (state) => {
       return !!state.user.token;
@@ -95,6 +100,18 @@ export const useSystemStore = defineStore('system', {
   },
   
   actions: {
+    // 设置当前用户
+    setCurrentUser(user) {
+      if (user) {
+        this.user = { ...this.user, ...user };
+        if (user.token) {
+          localStorage.setItem('userToken', user.token);
+        }
+      } else {
+        this.clearUser();
+      }
+    },
+    
     // 设置用户信息
     setUser(user) {
       this.user = { ...this.user, ...user };
