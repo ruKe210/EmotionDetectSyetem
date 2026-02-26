@@ -31,7 +31,7 @@ const routes = [
   {
     path: '/reports',
     name: 'Reports',
-    component: () => import('../views/TestPage.vue'),
+    component: () => import('../views/ReportsPage.vue'),
     meta: {
       title: '统计报表',
       requiresAuth: false
@@ -49,7 +49,7 @@ const routes = [
   {
     path: '/device',
     name: 'Device',
-    component: () => import('../views/TestPage.vue'),
+    component: () => import('../views/DevicePage.vue'),
     meta: {
       title: '设备管理',
       requiresAuth: false
@@ -58,7 +58,7 @@ const routes = [
   {
     path: '/alerts',
     name: 'Alerts',
-    component: () => import('../views/TestPage.vue'),
+    component: () => import('../views/AlertsPage.vue'),
     meta: {
       title: '告警管理',
       requiresAuth: false
@@ -67,7 +67,7 @@ const routes = [
   {
     path: '/logs',
     name: 'Logs',
-    component: () => import('../views/TestPage.vue'),
+    component: () => import('../views/LogsPage.vue'),
     meta: {
       title: '日志管理',
       requiresAuth: false

@@ -328,21 +328,39 @@ onMounted(() => {
 
 <style scoped>
 .history-data {
-  padding: 20px;
+  padding: 0;
+  animation: fade-up 0.3s ease;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 20px;
+  font-weight: 800;
+  color: #2d3436;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--primary), var(--lavender));
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .header-actions {
@@ -352,9 +370,10 @@ onMounted(() => {
 
 .filter-section {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 2px 20px rgba(108, 142, 240, 0.08);
+  border: 1px solid rgba(108, 142, 240, 0.06);
+  padding: 20px 22px;
   margin-bottom: 20px;
 }
 
@@ -362,14 +381,34 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .data-table {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 2px 20px rgba(108, 142, 240, 0.08);
+  border: 1px solid rgba(108, 142, 240, 0.06);
   margin-bottom: 20px;
   overflow: hidden;
+}
+
+:deep(.el-table) {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+:deep(.el-table th) {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  color: #636e72;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+:deep(.el-table tr:hover td) {
+  background: #fafbff;
 }
 
 .pagination {
@@ -381,68 +420,76 @@ onMounted(() => {
 .record-detail {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 8px 0;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
   gap: 15px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8f9ff;
 }
 
 .detail-item .label {
   width: 80px;
-  font-weight: 500;
-  color: #606266;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b2bec3;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 .detail-item .value {
   flex: 1;
-  color: #303133;
+  color: #2d3436;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .emotion-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
-.emotion-tag.neutral { background: #909399; color: white; }
-.emotion-tag.happy { background: #67c23a; color: white; }
-.emotion-tag.sad { background: #409eff; color: white; }
-.emotion-tag.angry { background: #f56c6c; color: white; }
-.emotion-tag.fearful { background: #e6a23c; color: white; }
-.emotion-tag.disgusted { background: #909399; color: white; }
-.emotion-tag.surprised { background: #909399; color: white; }
+.emotion-tag.neutral { background: #f0f0f0; color: #636e72; }
+.emotion-tag.happy { background: #fff9e6; color: #e17055; }
+.emotion-tag.sad { background: #eef1ff; color: var(--primary); }
+.emotion-tag.angry { background: #fff0f6; color: var(--pink); }
+.emotion-tag.fearful { background: #fff8ed; color: var(--yellow); }
+.emotion-tag.disgusted { background: var(--lavender-light); color: var(--lavender); }
+.emotion-tag.surprised { background: var(--mint-light); color: var(--mint); }
 
 @media (max-width: 768px) {
-  .history-data {
-    padding: 10px;
-  }
-  
+  .history-data { padding: 0; }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .filter-form {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .filter-form .el-form-item {
     width: 100%;
   }
-  
+
   .data-table {
     overflow-x: auto;
   }
-  
+
   .pagination {
     justify-content: center;
   }
