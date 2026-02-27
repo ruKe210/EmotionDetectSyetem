@@ -87,7 +87,12 @@
                   {{ getMainEmotion(face) }}
                 </div>
               </div>
-              <div class="confidence">{{ getConfidence(face) }}%</div>
+              <div class="face-meta">
+                <div class="confidence">{{ getConfidence(face) }}%</div>
+                <div class="va-mini" v-if="face.valence !== undefined">
+                  V:{{ face.valence?.toFixed(2) }} A:{{ face.arousal?.toFixed(2) }}
+                </div>
+              </div>
             </div>
             <div v-if="currentFaces.length === 0" class="no-faces">
               未检测到人脸
@@ -97,9 +102,8 @@
 
         <FaceDetail
           v-if="selectedFace"
-          :visible="showFaceDetail"
+          v-model="showFaceDetail"
           :face-data="selectedFace"
-          @update:visible="showFaceDetail = $event"
         />
       </div>
     </div>
@@ -134,7 +138,8 @@ const emotionData = reactive({
   neutral: 0,
   fearful: 0,
   surprised: 0,
-  disgusted: 0
+  disgusted: 0,
+  contempt: 0
 });
 
 const trendData = reactive({
@@ -160,14 +165,13 @@ const changeCamera = (id) => {
   faceStore.setCurrentCamera(id);
 };
 
-// 处理人脸检测结果
+// 处理人脸检测结果 (来自 WebSocket, 包含后端计算的 VA/PAD)
 const handleFaceDetected = (faces) => {
   currentFaces.value = faces;
   faceStore.updateCurrentFaces(faces);
-  
-  // 更新情绪数据
+
   updateEmotionData(faces);
-  updateTrendData();
+  updateTrendData(faces);
 };
 
 // 处理检测错误
@@ -179,113 +183,83 @@ const handleDetectionError = (error) => {
 // 更新情绪数据
 const updateEmotionData = (faces) => {
   const distribution = {
-    happy: 0,
-    sad: 0,
-    angry: 0,
-    neutral: 0,
-    fearful: 0,
-    surprised: 0,
-    disgusted: 0
+    happy: 0, sad: 0, angry: 0, neutral: 0,
+    fearful: 0, surprised: 0, disgusted: 0, contempt: 0
   };
-  
+
   faces.forEach(face => {
-    if (face.expressions) {
+    const emotion = face.dominant_emotion;
+    if (emotion && distribution[emotion] !== undefined) {
+      distribution[emotion]++;
+    } else if (face.expressions) {
       const maxExpression = Object.entries(face.expressions)
         .reduce((max, [key, value]) => value > max.value ? { key, value } : max, { key: 'neutral', value: 0 });
-      distribution[maxExpression.key]++;
+      if (distribution[maxExpression.key] !== undefined) {
+        distribution[maxExpression.key]++;
+      }
     }
   });
-  
+
   Object.assign(emotionData, distribution);
 };
 
-// 更新趋势数据
-const updateTrendData = () => {
+// 更新趋势数据 (使用平均 valence 值)
+const updateTrendData = (faces) => {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
+
+  let avgValence = 0;
+  if (faces.length > 0) {
+    const sum = faces.reduce((acc, f) => acc + (f.valence || 0), 0);
+    avgValence = sum / faces.length;
+  }
+
   trendData.times.push(timeStr);
-  trendData.values.push(Math.random() * 100);
-  
-  // 保持数据长度在30个点
+  // 映射 valence [-1,1] 到 [0,100]
+  trendData.values.push(Math.round((avgValence + 1) * 50));
+
   if (trendData.times.length > 30) {
     trendData.times.shift();
     trendData.values.shift();
   }
 };
 
-// 选择人脸
+// 选择人脸 - 使用后端传来的真实 VA/PAD 数据
 const selectFace = (face, index) => {
-  // 为face添加id和时间戳
   selectedFace.value = {
-    id: `face-${index}-${Date.now()}`,
+    id: face.face_id || `face-${index}-${Date.now()}`,
     timestamp: Date.now(),
     ...face,
-    // 计算效价和唤醒度
-    valence: calculateValence(face),
-    arousal: calculateArousal(face),
-    // 计算三维情感模型值
-    pleasure: calculatePleasure(face),
-    intensity: calculateIntensity(face),
-    attention: calculateAttention(face)
+    // 二维情感 (来自后端模型直接输出)
+    valence: face.valence ?? 0,
+    arousal: face.arousal ?? 0,
+    // 三维情感 PAD (来自后端模型计算)
+    pleasure: face.pleasure ?? face.valence ?? 0,
+    pad_arousal: face.pad_arousal ?? face.arousal ?? 0,
+    dominance: face.dominance ?? 0,
   };
   showFaceDetail.value = true;
 };
 
-// 计算效价
-const calculateValence = (face) => {
-  if (!face.expressions) return 0;
-  const { happy, sad, angry, fearful, disgusted, surprised, neutral } = face.expressions;
-  return (happy + surprised * 0.5) - (sad + angry + fearful + disgusted);
-};
-
-// 计算唤醒度
-const calculateArousal = (face) => {
-  if (!face.expressions) return 0;
-  const { happy, angry, fearful, surprised } = face.expressions;
-  return happy + angry + fearful + surprised;
-};
-
-// 计算愉悦度
-const calculatePleasure = (face) => {
-  if (!face.expressions) return 0;
-  const { happy, sad, angry, fearful, disgusted } = face.expressions;
-  return happy - (sad + angry + fearful + disgusted);
-};
-
-// 计算强度
-const calculateIntensity = (face) => {
-  if (!face.expressions) return 0;
-  const values = Object.values(face.expressions);
-  return Math.max(...values);
-};
-
-// 计算关注度
-const calculateAttention = (face) => {
-  if (!face.expressions) return 0;
-  const { surprised, fearful } = face.expressions;
-  return surprised + fearful;
-};
-
 // 获取主要情绪
 const getMainEmotion = (face) => {
+  if (face.dominant_emotion) {
+    return emotionMap[face.dominant_emotion] || face.dominant_emotion;
+  }
   if (!face.expressions) return '未知';
   const maxExpression = Object.entries(face.expressions)
     .reduce((max, [key, value]) => value > max.value ? { key, value } : max, { key: 'neutral', value: 0 });
-  const emotionMap = {
-    neutral: '中性',
-    happy: '开心',
-    sad: '悲伤',
-    angry: '愤怒',
-    fearful: '恐惧',
-    disgusted: '厌恶',
-    surprised: '惊讶'
-  };
   return emotionMap[maxExpression.key] || maxExpression.key;
+};
+
+const emotionMap = {
+  neutral: '中性', happy: '开心', sad: '悲伤', angry: '愤怒',
+  fearful: '恐惧', disgusted: '厌恶', surprised: '惊讶', contempt: '蔑视'
 };
 
 // 获取置信度
 const getConfidence = (face) => {
+  if (face.emotion_confidence) return Math.round(face.emotion_confidence * 100);
   if (!face.expressions) return 0;
   const maxExpression = Object.entries(face.expressions)
     .reduce((max, [key, value]) => value > max.value ? { key, value } : max, { key: 'neutral', value: 0 });
@@ -294,6 +268,7 @@ const getConfidence = (face) => {
 
 // 获取情绪类名
 const getEmotionClass = (face) => {
+  if (face.dominant_emotion) return face.dominant_emotion;
   if (!face.expressions) return 'neutral';
   const maxExpression = Object.entries(face.expressions)
     .reduce((max, [key, value]) => value > max.value ? { key, value } : max, { key: 'neutral', value: 0 });
@@ -302,7 +277,6 @@ const getEmotionClass = (face) => {
 
 // 刷新统计数据
 const refreshStats = () => {
-  // 模拟刷新统计数据
   faceStore.updateGlobalStats({
     onlineDevices: Math.floor(Math.random() * 10) + 1,
     todayRecognition: Math.floor(Math.random() * 1000) + 100,
@@ -313,24 +287,36 @@ const refreshStats = () => {
   });
 };
 
-// 模拟摄像头列表
-const loadCameras = () => {
-  cameras.value = [
-    { id: 'camera1', name: 'USB摄像头' },
-    { id: 'camera2', name: '网络摄像头' },
-    { id: 'camera3', name: '内置摄像头' }
-  ];
-  cameraId.value = cameras.value[0].id;
-  faceStore.updateCameras(cameras.value);
-  faceStore.setCurrentCamera(cameraId.value);
+// 获取真实摄像头列表
+const loadCameras = async () => {
+  try {
+    await navigator.mediaDevices.getUserMedia({ video: true });
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+    if (videoDevices.length > 0) {
+      cameras.value = videoDevices.map((device, index) => ({
+        id: device.deviceId,
+        name: device.label || `摄像头 ${index + 1}`
+      }));
+      cameraId.value = cameras.value[0].id;
+      faceStore.updateCameras(cameras.value);
+      faceStore.setCurrentCamera(cameraId.value);
+    } else {
+      cameras.value = [{ id: '', name: '默认摄像头' }];
+      cameraId.value = '';
+    }
+  } catch (err) {
+    console.error('获取摄像头列表失败:', err);
+    cameras.value = [{ id: '', name: '默认摄像头' }];
+    cameraId.value = '';
+  }
 };
 
-onMounted(() => {
-  loadCameras();
-  // 初始化系统
+onMounted(async () => {
+  await loadCameras();
   faceStore.loadSystemConfig();
   systemStore.initSystem();
-  // 自动开始检测
   startDetection();
 });
 </script>
@@ -560,6 +546,13 @@ onMounted(() => {
   color: #2d3436;
 }
 
+.face-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
 .confidence {
   font-size: 13px;
   font-weight: 800;
@@ -569,18 +562,17 @@ onMounted(() => {
   border-radius: 10px;
 }
 
+.va-mini {
+  font-size: 10px;
+  color: #909399;
+  font-family: monospace;
+}
+
 .no-faces {
   text-align: center;
   padding: 36px 20px;
   color: #b2bec3;
   font-size: 14px;
-}
-
-.no-faces::before {
-  content: '👤';
-  display: block;
-  font-size: 32px;
-  margin-bottom: 10px;
 }
 
 .emotion-tag {
@@ -598,6 +590,7 @@ onMounted(() => {
 .emotion-tag.fearful { background: #fff8ed; color: var(--yellow); }
 .emotion-tag.disgusted { background: var(--lavender-light); color: var(--lavender); }
 .emotion-tag.surprised { background: var(--mint-light); color: var(--mint); }
+.emotion-tag.contempt { background: #f0e6ff; color: #6c5ce7; }
 
 @media (max-width: 1200px) {
   .content-grid {

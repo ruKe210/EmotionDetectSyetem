@@ -136,7 +136,8 @@ export function formatEmotion(emotion) {
     angry: '愤怒',
     fearful: '恐惧',
     disgusted: '厌恶',
-    surprised: '惊讶'
+    surprised: '惊讶',
+    contempt: '蔑视'
   };
   return emotionMap[emotion] || emotion;
 }

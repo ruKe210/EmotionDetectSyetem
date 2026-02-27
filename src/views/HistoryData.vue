@@ -32,6 +32,7 @@
             <el-option label="恐惧" value="fearful"></el-option>
             <el-option label="厌恶" value="disgusted"></el-option>
             <el-option label="惊讶" value="surprised"></el-option>
+            <el-option label="蔑视" value="contempt"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="设备">
@@ -159,15 +160,15 @@
         </div>
         <div class="detail-item">
           <span class="label">愉悦度:</span>
-          <span class="value">{{ selectedRecord.pleasure?.toFixed(2) || '-' }}</span>
+          <span class="value">{{ selectedRecord.pleasure?.toFixed(2) || selectedRecord.valence || '-' }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">强度:</span>
-          <span class="value">{{ selectedRecord.intensity?.toFixed(2) || '-' }}</span>
+          <span class="label">PAD唤醒度:</span>
+          <span class="value">{{ selectedRecord.pad_arousal?.toFixed(2) || selectedRecord.arousal || '-' }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">关注度:</span>
-          <span class="value">{{ selectedRecord.attention?.toFixed(2) || '-' }}</span>
+          <span class="label">支配度:</span>
+          <span class="value">{{ selectedRecord.dominance?.toFixed(2) || '-' }}</span>
         </div>
       </div>
     </el-dialog>
@@ -296,23 +297,25 @@ const getEmotionName = (emotion) => {
 
 // 生成模拟数据
 const generateMockData = () => {
-  const emotions = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised'];
+  const emotions = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised', 'contempt'];
   const devices = ['camera1', 'camera2', 'camera3'];
   const data = [];
-  
+
   for (let i = 1; i <= 100; i++) {
     const emotion = emotions[Math.floor(Math.random() * emotions.length)];
+    const valence = parseFloat((Math.random() * 2 - 1).toFixed(4));
+    const arousal = parseFloat((Math.random() * 2 - 1).toFixed(4));
     data.push({
       id: i,
       device: devices[Math.floor(Math.random() * devices.length)],
       timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
       emotion: emotion,
       confidence: Math.round(Math.random() * 20) + 80,
-      valence: (Math.random() * 2 - 1).toFixed(2),
-      arousal: Math.random().toFixed(2),
-      pleasure: (Math.random() * 2 - 1).toFixed(2),
-      intensity: Math.random().toFixed(2),
-      attention: Math.random().toFixed(2)
+      valence: valence,
+      arousal: arousal,
+      pleasure: valence,
+      pad_arousal: arousal,
+      dominance: parseFloat((Math.random() * 2 - 1).toFixed(4))
     });
   }
   
@@ -466,6 +469,7 @@ onMounted(() => {
 .emotion-tag.fearful { background: #fff8ed; color: var(--yellow); }
 .emotion-tag.disgusted { background: var(--lavender-light); color: var(--lavender); }
 .emotion-tag.surprised { background: var(--mint-light); color: var(--mint); }
+.emotion-tag.contempt { background: #f0e6ff; color: #6c5ce7; }
 
 @media (max-width: 768px) {
   .history-data { padding: 0; }

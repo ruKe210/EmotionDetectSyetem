@@ -192,12 +192,12 @@ onMounted(() => {
 });
 
 // 组件卸载时销毁图表
-const onUnmounted = () => {
+onUnmounted(() => {
   if (chartInstance) {
     chartInstance.dispose();
   }
   window.removeEventListener('resize', handleResize);
-};
+});
 </script>
 
 <style scoped>

@@ -32,7 +32,8 @@ const props = defineProps({
       neutral: 0,
       fearful: 0,
       surprised: 0,
-      disgusted: 0
+      disgusted: 0,
+      contempt: 0
     })
   },
   trendData: {
@@ -145,7 +146,7 @@ const getBarOption = () => {
         data: emotionValues,
         itemStyle: {
           color: function(params) {
-            const colors = ['#67c23a', '#409eff', '#f56c6c', '#909399', '#e6a23c', '#909399', '#909399'];
+            const colors = ['#67c23a', '#409eff', '#f56c6c', '#909399', '#e6a23c', '#8e44ad', '#17c6cf', '#6c5ce7'];
             return colors[params.dataIndex];
           }
         }
@@ -191,7 +192,8 @@ const getEmotionName = (emotion) => {
     angry: '愤怒',
     fearful: '恐惧',
     disgusted: '厌恶',
-    surprised: '惊讶'
+    surprised: '惊讶',
+    contempt: '蔑视'
   };
   return emotionMap[emotion] || emotion;
 };
